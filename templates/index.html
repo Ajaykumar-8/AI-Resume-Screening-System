@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Resume Screening System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="background"></div>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h1>AI Resume Screening System</h1>
+
+            <p class="subtitle">
+                Smart ATS-based Resume Matching using NLP & Machine Learning
+            </p>
+
+            <form method="POST"
+                  enctype="multipart/form-data">
+
+                <div class="input-group">
+
+                    <label>Job Description</label>
+
+                    <textarea
+                        name="job_description"
+                        placeholder="Paste detailed job description here..."
+                        required></textarea>
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>Upload Resumes</label>
+
+                    <input
+                        type="file"
+                        name="resumes"
+                        multiple
+                        required>
+
+                </div>
+
+                <button type="submit">
+                    Analyze Resumes
+                </button>
+
+            </form>
+
+            {% if results %}
+
+            <div class="results">
+
+                <h2>Matching Results</h2>
+
+                <table>
+
+                    <tr>
+                        <th>Resume</th>
+                        <th>ATS Match Score</th>
+                    </tr>
+
+                    {% for result in results %}
+
+                    <tr>
+
+                        <td>{{ result.resume }}</td>
+
+                        <td>
+
+                            <div class="score-box">
+
+                                <div class="progress">
+
+                                    <div class="progress-fill"
+                                         style="width: {{ result.score }}%">
+
+                                        {{ result.score }}%
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </table>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

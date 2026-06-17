@@ -11,13 +11,17 @@ from report import generate_pdf
 from db.database import init_db
 from db.logger import log_usage
 
-
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "uploads"
+# Use /tmp for Render deployment
+UPLOAD_FOLDER = "/tmp/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs("db", exist_ok=True)
+
+# Initialize DB on startup
+init_db()
 
 latest_results = []
 
@@ -26,62 +30,80 @@ latest_results = []
 @app.route("/", methods=["GET", "POST"])
 def index():
     global latest_results
-
     results = []
 
-    if request.method == "POST":
+    try:
+        if request.method == "POST":
 
-        # Job Description
-        job_description = request.form["job_description"]
-        job_description = clean_text(job_description)
+            print("POST request received")
 
-        # Uploaded Files
-        files = request.files.getlist("resumes")
+            # Job Description
+            job_description = request.form["job_description"]
+            job_description = clean_text(job_description)
 
-        resume_texts = []
-        filenames = []
+            # Uploaded Files
+            files = request.files.getlist("resumes")
 
-        # Save and Extract Text
-        for file in files:
+            resume_texts = []
+            filenames = []
 
-            if file.filename == "":
-                continue
+            # Save and Extract Text
+            for file in files:
 
-            filename = secure_filename(file.filename)
+                print("Processing:", file.filename)
 
-            filepath = os.path.join(
-                app.config["UPLOAD_FOLDER"],
-                filename
-            )
+                if file.filename == "":
+                    continue
 
-            file.save(filepath)
+                filename = secure_filename(file.filename)
 
-            text = extract_resume_text(filepath)
-            text = clean_text(text)
-
-            resume_texts.append(text)
-            filenames.append(filename)
-
-        # Calculate ATS Results
-        results = calculate_scores(
-            job_description,
-            resume_texts,
-            filenames
-        )
-
-        # Store logs in SQLite
-        for result in results:
-            log_usage(
-                result["resume"],
-                os.path.join(
+                filepath = os.path.join(
                     app.config["UPLOAD_FOLDER"],
-                    result["resume"]
-                ),
+                    filename
+                )
+
+                print("Saving to:", filepath)
+
+                file.save(filepath)
+
+                try:
+                    text = extract_resume_text(filepath)
+                    text = clean_text(text)
+                except Exception as e:
+                    print("Resume parsing error:", str(e))
+                    text = ""
+
+                resume_texts.append(text)
+                filenames.append(filename)
+
+            print("Calculating ATS scores...")
+
+            # Calculate ATS Results
+            results = calculate_scores(
                 job_description,
-                result["score"]
+                resume_texts,
+                filenames
             )
 
-        latest_results = results
+            print("Scores calculated")
+
+            # Store logs in SQLite
+            for result in results:
+                log_usage(
+                    result["resume"],
+                    os.path.join(
+                        app.config["UPLOAD_FOLDER"],
+                        result["resume"]
+                    ),
+                    job_description,
+                    result["score"]
+                )
+
+            latest_results = results
+
+    except Exception as e:
+        print("MAIN ERROR:", str(e))
+        raise e
 
     return render_template(
         "index.html",
@@ -121,10 +143,7 @@ def dashboard():
 @app.route("/admin")
 def admin():
 
-    conn = sqlite3.connect(
-        "db/usage.db"
-    )
-
+    conn = sqlite3.connect("db/usage.db")
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -133,7 +152,6 @@ def admin():
     """)
 
     logs = cursor.fetchall()
-
     conn.close()
 
     return render_template(
@@ -146,10 +164,7 @@ def admin():
 @app.route("/download-user-resume/<filename>")
 def download_user_resume(filename):
 
-    conn = sqlite3.connect(
-        "db/usage.db"
-    )
-
+    conn = sqlite3.connect("db/usage.db")
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -160,7 +175,6 @@ def download_user_resume(filename):
     """, (filename,))
 
     file = cursor.fetchone()
-
     conn.close()
 
     if file:
@@ -174,10 +188,4 @@ def download_user_resume(filename):
 
 # Main
 if __name__ == "__main__":
-
-    init_db()
-
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
-
     app.run(debug=True)

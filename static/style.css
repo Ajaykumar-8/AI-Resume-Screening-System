@@ -1,286 +1,423 @@
 * {
-
     margin: 0;
-
     padding: 0;
-
     box-sizing: border-box;
 }
 
 body {
-
     font-family: 'Segoe UI', sans-serif;
-
     min-height: 100vh;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
     background: linear-gradient(
         135deg,
         #1e3c72,
         #2a5298
     );
-
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .background {
-
     position: fixed;
-
     width: 100%;
-
     height: 100%;
-
     background:
-        radial-gradient(circle at top left,
-        rgba(255,255,255,0.15),
-        transparent 30%),
-
-        radial-gradient(circle at bottom right,
-        rgba(255,255,255,0.1),
-        transparent 30%);
+        radial-gradient(
+            circle at top left,
+            rgba(255,255,255,0.06),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at bottom right,
+            rgba(255,255,255,0.1),
+            transparent 30%
+        );
+    z-index: -1;
 }
 
 .container {
-
     width: 100%;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
     padding: 30px;
 }
 
 .card {
-
-    width: 90%;
-
-    max-width: 900px;
-
+    width: 95%;
+    margin: auto;
     background: rgba(255,255,255,0.12);
-
     backdrop-filter: blur(12px);
-
     border: 1px solid rgba(255,255,255,0.2);
-
     border-radius: 20px;
-
-    padding: 40px;
-
+    padding: 30px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-
     color: white;
 }
 
+/* Headings */
+
 h1 {
-
     text-align: center;
-
     font-size: 42px;
-
     margin-bottom: 10px;
 }
 
 .subtitle {
-
     text-align: center;
-
-    margin-bottom: 35px;
-
+    margin-bottom: 30px;
     color: #dbeafe;
-
     font-size: 18px;
 }
 
-.input-group {
+/* Form */
 
+.input-group {
     margin-bottom: 25px;
 }
 
 label {
-
     display: block;
-
     margin-bottom: 10px;
-
     font-size: 18px;
-
     font-weight: 600;
 }
 
-textarea {
-
+textarea,
+input[type="file"] {
     width: 100%;
-
-    height: 180px;
-
-    border: none;
-
-    outline: none;
-
+    padding: 15px;
     border-radius: 12px;
-
-    padding: 18px;
-
-    font-size: 16px;
-
-    resize: none;
-
+    border: none;
     background: rgba(255,255,255,0.15);
-
     color: white;
+    outline: none;
+}
+
+textarea {
+    height: 180px;
+    resize: none;
 }
 
 textarea::placeholder {
-
-    color: #d1d5db;
+    color: rgba(255,255,255,0.6);
 }
 
-input[type="file"] {
-
-    width: 100%;
-
-    padding: 15px;
-
-    border-radius: 12px;
-
-    background: rgba(255,255,255,0.15);
-
-    color: white;
-
-    border: none;
-}
+/* Analyze Button */
 
 button {
-
     width: 100%;
-
     padding: 16px;
-
     border: none;
-
     border-radius: 14px;
-
     background: linear-gradient(
         135deg,
         #00c6ff,
         #0072ff
     );
-
     color: white;
-
     font-size: 18px;
-
     font-weight: bold;
-
     cursor: pointer;
-
     transition: 0.3s;
 }
 
 button:hover {
-
-    transform: translateY(-3px);
-
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
 
-.results {
+#loader {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 16px;
+    color: #dbeafe;
+}
 
+/* Results */
+
+.results {
     margin-top: 40px;
 }
 
-h2 {
-
-    margin-bottom: 20px;
-
+.summary {
     text-align: center;
+    margin-bottom: 20px;
+    font-size: 18px;
 }
 
-table {
+/* Table */
 
-    width: 100%;
-
-    border-collapse: collapse;
-
-    overflow: hidden;
-
+.table-wrapper {
+    overflow-x: auto;
     border-radius: 12px;
 }
 
-th {
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-    background: rgba(255,255,255,0.2);
-
+th,
+td {
     padding: 15px;
-
     text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    background: rgba(255,255,255,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 td {
-
-    padding: 15px;
-
-    text-align: center;
-
     background: rgba(255,255,255,0.08);
 }
 
 tr:hover td {
-
     background: rgba(255,255,255,0.15);
+    transition: 0.3s;
 }
 
-.score-box {
-
-    width: 100%;
+.resume-name {
+    max-width: 180px;
+    word-break: break-word;
+    font-weight: 500;
 }
+
+.summary-cell {
+    max-width: 250px;
+    word-wrap: break-word;
+    line-height: 1.6;
+}
+
+.breakdown {
+    line-height: 1.8;
+}
+
+/* Score Progress */
 
 .progress {
-
     width: 100%;
-
     background: rgba(255,255,255,0.15);
-
     border-radius: 20px;
-
     overflow: hidden;
 }
 
 .progress-fill {
-
-    padding: 8px;
-
+    min-width: 80px;
+    text-align: center;
+    padding: 10px;
     border-radius: 20px;
+    color: white;
+    font-weight: bold;
+    animation: growBar 1.2s ease;
+}
 
+@keyframes growBar {
+    from {
+        width: 0;
+    }
+}
+
+.high {
     background: linear-gradient(
         90deg,
-        #00f260,
-        #0575e6
+        #00c853,
+        #64dd17
     );
+}
 
+.medium {
+    background: linear-gradient(
+        90deg,
+        #ff9800,
+        #ffc107
+    );
+}
+
+.low {
+    background: linear-gradient(
+        90deg,
+        #f44336,
+        #ff5252
+    );
+}
+
+/* Skill Badges */
+
+.skill-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 4px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.skill-badge:hover {
+    transform: scale(1.05);
+}
+
+.found {
+    background: rgba(0,255,100,0.25);
+}
+
+.missing {
+    background: rgba(255,0,0,0.25);
+}
+
+/* Buttons */
+
+.download-btn,
+.dashboard-btn {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.download-btn a,
+.dashboard-btn a {
+    display: inline-block;
+    padding: 14px 28px;
+    min-width: 240px;
+    text-decoration: none;
+    border-radius: 12px;
     font-weight: bold;
+    transition: 0.3s;
+}
 
+/* Download */
+
+.download-btn a {
+    background: linear-gradient(
+        135deg,
+        #00c6ff,
+        #0072ff
+    );
     color: white;
 }
 
-@media(max-width: 768px) {
+.download-btn a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
 
+/* Dashboard */
+
+.dashboard-btn a {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.dashboard-btn a:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+/* Dashboard Analytics */
+
+.dashboard-card {
+    text-align: center;
+}
+
+.dashboard-score {
+    font-size: 22px;
+    margin-top: 20px;
+    color: #dbeafe;
+}
+
+.avg-score-box {
+    width: 180px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 20px;
+    background: linear-gradient(
+        135deg,
+        #00c6ff,
+        #0072ff
+    );
+    font-size: 34px;
+    font-weight: bold;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+}
+
+.chart-card {
+    margin-top: 35px;
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    max-width: 850px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.chart-card h2 {
+    margin-bottom: 18px;
+    font-size: 26px;
+    font-weight: 600;
+    color: white;
+}
+
+.chart-card img {
+    width: 100%;
+    max-width: 650px;
+    height: auto;
+    display: block;
+    margin: auto;
+    border-radius: 12px;
+}
+
+/* Empty state */
+
+.empty-state {
+    text-align: center;
+    margin-top: 20px;
+    color: #dbeafe;
+    font-size: 18px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
     .card {
-
-        padding: 25px;
+        padding: 20px;
     }
 
     h1 {
+        font-size: 28px;
+    }
 
-        font-size: 30px;
+    .subtitle {
+        font-size: 15px;
+    }
+
+    th,
+    td {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    textarea {
+        height: 150px;
+    }
+
+    .skill-badge {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+
+    .chart-card h2 {
+        font-size: 20px;
+    }
+
+    .avg-score-box {
+        width: 140px;
+        font-size: 26px;
+    }
+
+    .download-btn a,
+    .dashboard-btn a {
+        min-width: 200px;
+        padding: 12px 20px;
     }
 }

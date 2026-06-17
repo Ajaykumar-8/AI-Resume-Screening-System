@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+uploads/
+db/usage.db
+.env
+report.pdf
+static/charts/*.png

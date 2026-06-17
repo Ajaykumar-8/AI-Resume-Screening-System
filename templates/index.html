@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -12,7 +11,6 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
-
 </head>
 
 <body>
@@ -51,13 +49,18 @@
                         type="file"
                         name="resumes"
                         multiple
+                        accept=".pdf,.docx"
                         required>
 
                 </div>
 
-                <button type="submit">
+                <button type="submit" id="submitBtn">
                     Analyze Resumes
                 </button>
+
+                <div id="loader" style="display:none;">
+                    Analyzing resumes...
+                </div>
 
             </form>
 
@@ -67,43 +70,115 @@
 
                 <h2>Matching Results</h2>
 
-                <table>
+                <p class="summary">
+                    {{ results|length }} resumes analyzed successfully
+                </p>
 
-                    <tr>
-                        <th>Resume</th>
-                        <th>ATS Match Score</th>
-                    </tr>
+                <div class="table-wrapper">
 
-                    {% for result in results %}
+                    <table>
 
-                    <tr>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Resume</th>
+                            <th>Final Score</th>
+                            <th>Rank Label</th>
+                            <th>Skills Found</th>
+                            <th>Missing Skills</th>
+                            <th>Score Breakdown</th>
+                            <th>Summary</th>
+                        </tr>
 
-                        <td>{{ result.resume }}</td>
+                        {% for result in results %}
 
-                        <td>
+                        <tr>
 
-                            <div class="score-box">
+                            <td>{{ loop.index }}</td>
 
-                                <div class="progress">
+                            <td class="resume-name">
+                                {{ result.resume[:20] }}...
+                            </td>
 
-                                    <div class="progress-fill"
-                                         style="width: {{ result.score }}%">
+                            <td>
+                                <div class="score-box">
+                                    <div class="progress">
 
-                                        {{ result.score }}%
+                                        <div class="progress-fill
+                                        {% if result.score >= 80 %}
+                                            high
+                                        {% elif result.score >= 50 %}
+                                            medium
+                                        {% else %}
+                                            low
+                                        {% endif %}"
+                                        style="width: {{ result.score }}%">
+
+                                            {{ result.score }}%
+
+                                        </div>
 
                                     </div>
-
                                 </div>
+                            </td>
 
-                            </div>
+                            <td>{{ result.rank_label }}</td>
 
-                        </td>
+                            <td>
+                                {% for skill in result.skills %}
+                                    <span class="skill-badge found">
+                                        {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </td>
 
-                    </tr>
+                            <td>
+                                {% for skill in result.missing_skills %}
+                                    <span class="skill-badge missing">
+                                        {{ skill }}
+                                    </span>
+                                {% endfor %}
+                            </td>
 
-                    {% endfor %}
+                            <td class="breakdown">
+                                TF-IDF: {{ result.tfidf_score }}% <br>
+                                Keyword: {{ result.keyword_score }}% <br>
+                                Bonus: {{ result.bonus }}
+                            </td>
 
-                </table>
+                            <td class="summary-cell">
+                                {{ result.summary[:120] }}...
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </table>
+
+                </div>
+
+                <div class="download-btn">
+                    <a href="/download-report">
+                        Download Full Report
+                    </a>
+                </div>
+
+                <div class="dashboard-btn">
+                    <a href="/dashboard">
+                        View Analytics Dashboard
+                    </a>
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="empty-state">
+
+                <p>
+                    No resumes analyzed yet.
+                    Upload resumes and start screening.
+                </p>
 
             </div>
 
@@ -112,6 +187,14 @@
         </div>
 
     </div>
+
+    <script>
+        document.querySelector("form").onsubmit = function () {
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("submitBtn").innerText = "Processing...";
+        };
+    </script>
 
 </body>
 

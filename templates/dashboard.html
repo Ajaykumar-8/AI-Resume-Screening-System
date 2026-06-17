@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<div class="container">
+
+    <div class="card dashboard-card">
+
+        <h1>Analytics Dashboard</h1>
+
+        <p class="dashboard-score">
+            Average ATS Score
+        </p>
+
+        <div class="avg-score-box">
+            {{ avg_score }}%
+        </div>
+
+        <div class="chart-card">
+            <h2>Candidate Performance</h2>
+            <img src="{{ url_for('static', filename='charts/scores.png') }}">
+        </div>
+
+        <div class="chart-card">
+            <h2>Skills Distribution</h2>
+            <img src="{{ url_for('static', filename='charts/skills.png') }}">
+        </div>
+
+        <div class="chart-card">
+            <h2>Skill Gaps Analysis</h2>
+            <img src="{{ url_for('static', filename='charts/missing.png') }}">
+        </div>
+
+        <div class="dashboard-btn">
+            <a href="/">Back to Home</a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

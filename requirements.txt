@@ -1,4 +1,9 @@
-flask
+Flask
 pdfplumber
 python-docx
 scikit-learn
+reportlab
+matplotlib
+dnspython
+gunicorn
+numpy

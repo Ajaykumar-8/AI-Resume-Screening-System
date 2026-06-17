@@ -1,227 +1,183 @@
-from flask import Flask, render_template, request
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
-import pdfplumber
-import docx
+from flask import Flask, render_template, request, send_file
 import os
-import re
+import sqlite3
+from werkzeug.utils import secure_filename
+
+from analytics import generate_analytics
+from utils import clean_text, extract_resume_text
+from scorer import calculate_scores
+from report import generate_pdf
+
+from db.database import init_db
+from db.logger import log_usage
+
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+latest_results = []
 
 
-# -----------------------------
-# CLEAN TEXT
-# -----------------------------
-def clean_text(text):
-
-    text = text.lower()
-
-    text = re.sub(r'[^a-zA-Z0-9 ]', ' ', text)
-
-    text = re.sub(r'\s+', ' ', text)
-
-    return text
-
-
-# -----------------------------
-# EXTRACT PDF TEXT
-# -----------------------------
-def extract_pdf(file_path):
-
-    text = ""
-
-    with pdfplumber.open(file_path) as pdf:
-
-        for page in pdf.pages:
-
-            extracted = page.extract_text()
-
-            if extracted:
-                text += extracted + " "
-
-    return text
-
-
-# -----------------------------
-# EXTRACT DOCX TEXT
-# -----------------------------
-def extract_docx(file_path):
-
-    doc = docx.Document(file_path)
-
-    text = ""
-
-    for para in doc.paragraphs:
-
-        text += para.text + " "
-
-    return text
-
-
-# -----------------------------
-# EXTRACT RESUME TEXT
-# -----------------------------
-def extract_resume_text(file_path):
-
-    if file_path.endswith('.pdf'):
-        return extract_pdf(file_path)
-
-    elif file_path.endswith('.docx'):
-        return extract_docx(file_path)
-
-    return ""
-
-
-# -----------------------------
-# KEYWORD MATCH SCORE
-# -----------------------------
-def keyword_match_score(job_desc, resume):
-
-    job_words = set(job_desc.split())
-
-    resume_words = set(resume.split())
-
-    matched_words = job_words.intersection(resume_words)
-
-    if len(job_words) == 0:
-        return 0
-
-    score = (len(matched_words) / len(job_words)) * 100
-
-    return score
-
-
-# -----------------------------
-# HOME PAGE
-# -----------------------------
-@app.route('/', methods=['GET', 'POST'])
+# Home Page
+@app.route("/", methods=["GET", "POST"])
 def index():
+    global latest_results
 
     results = []
 
-    if request.method == 'POST':
+    if request.method == "POST":
 
         # Job Description
-        job_description = request.form['job_description']
-
+        job_description = request.form["job_description"]
         job_description = clean_text(job_description)
 
         # Uploaded Files
-        files = request.files.getlist('resumes')
+        files = request.files.getlist("resumes")
 
         resume_texts = []
-
         filenames = []
 
-        # Process Resumes
+        # Save and Extract Text
         for file in files:
 
-            if file.filename == '':
+            if file.filename == "":
                 continue
 
+            filename = secure_filename(file.filename)
+
             filepath = os.path.join(
-                app.config['UPLOAD_FOLDER'],
-                file.filename
+                app.config["UPLOAD_FOLDER"],
+                filename
             )
 
             file.save(filepath)
 
             text = extract_resume_text(filepath)
-
             text = clean_text(text)
 
             resume_texts.append(text)
+            filenames.append(filename)
 
-            filenames.append(file.filename)
-
-        # Combine Docs
-        documents = [job_description] + resume_texts
-
-        # TF-IDF
-        vectorizer = TfidfVectorizer(
-            stop_words='english',
-            ngram_range=(1,2),
-            max_features=5000
+        # Calculate ATS Results
+        results = calculate_scores(
+            job_description,
+            resume_texts,
+            filenames
         )
 
-        vectors = vectorizer.fit_transform(documents)
-
-        similarity_scores = cosine_similarity(
-            vectors[0:1],
-            vectors[1:]
-        ).flatten()
-
-        # FINAL HYBRID SCORE
-        for i in range(len(filenames)):
-
-            tfidf_score = similarity_scores[i] * 100
-
-            keyword_score = keyword_match_score(
+        # Store logs in SQLite
+        for result in results:
+            log_usage(
+                result["resume"],
+                os.path.join(
+                    app.config["UPLOAD_FOLDER"],
+                    result["resume"]
+                ),
                 job_description,
-                resume_texts[i]
+                result["score"]
             )
 
-            # Weighted Hybrid Score
-            final_score = (
-                (0.7 * tfidf_score) +
-                (0.3 * keyword_score)
-            )
-
-            # BONUS BOOST
-            important_keywords = [
-                "python",
-                "analytics",
-                "data",
-                "machine",
-                "learning",
-                "dashboard",
-                "sql",
-                "visualization",
-                "ai"
-            ]
-
-            bonus = 0
-
-            for word in important_keywords:
-
-                if word in resume_texts[i]:
-                    bonus += 3
-
-            final_score += bonus
-
-            # Limit Max
-            if final_score > 100:
-                final_score = 100
-
-            results.append({
-                'resume': filenames[i],
-                'score': round(final_score, 2)
-            })
-
-        # Sort Results
-        results = sorted(
-            results,
-            key=lambda x: x['score'],
-            reverse=True
-        )
+        latest_results = results
 
     return render_template(
-        'index.html',
+        "index.html",
         results=results
     )
 
 
-# -----------------------------
-# MAIN
-# -----------------------------
-if __name__ == '__main__':
+# Download PDF Report
+@app.route("/download-report")
+def download_report():
+    global latest_results
 
-    if not os.path.exists('uploads'):
-        os.makedirs('uploads')
+    pdf_path = generate_pdf(latest_results)
+
+    return send_file(
+        pdf_path,
+        as_attachment=True
+    )
+
+
+# Analytics Dashboard
+@app.route("/dashboard")
+def dashboard():
+    global latest_results
+
+    avg_score = generate_analytics(
+        latest_results
+    )
+
+    return render_template(
+        "dashboard.html",
+        avg_score=avg_score
+    )
+
+
+# Admin Panel
+@app.route("/admin")
+def admin():
+
+    conn = sqlite3.connect(
+        "db/usage.db"
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM usage_logs
+        ORDER BY created_at DESC
+    """)
+
+    logs = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin.html",
+        logs=logs
+    )
+
+
+# Download User Resume
+@app.route("/download-user-resume/<filename>")
+def download_user_resume(filename):
+
+    conn = sqlite3.connect(
+        "db/usage.db"
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT filepath FROM usage_logs
+        WHERE filename = ?
+        ORDER BY id DESC
+        LIMIT 1
+    """, (filename,))
+
+    file = cursor.fetchone()
+
+    conn.close()
+
+    if file:
+        return send_file(
+            file[0],
+            as_attachment=True
+        )
+
+    return "File not found"
+
+
+# Main
+if __name__ == "__main__":
+
+    init_db()
+
+    if not os.path.exists("uploads"):
+        os.makedirs("uploads")
 
     app.run(debug=True)

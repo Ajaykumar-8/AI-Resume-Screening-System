@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, redirect
 import os
 import sqlite3
 from werkzeug.utils import secure_filename
+
+import cloudinary
+import cloudinary.uploader
 
 from analytics import generate_analytics
 from utils import clean_text, extract_resume_text
@@ -11,16 +14,24 @@ from report import generate_pdf
 from db.database import init_db
 from db.logger import log_usage
 
+
+# Cloudinary Config
+cloudinary.config(
+    cloud_name="dwg2nu0ss",
+    api_key="134886158831528",
+    api_secret="CnKmPh_0KuLhyfLFBbarcnoROoE"
+)
+
 app = Flask(__name__)
 
-# Use /tmp for Render deployment
+# Temp storage for Render
 UPLOAD_FOLDER = "/tmp/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("db", exist_ok=True)
 
-# Initialize DB on startup
+# Initialize DB
 init_db()
 
 latest_results = []
@@ -46,8 +57,9 @@ def index():
 
             resume_texts = []
             filenames = []
+            uploaded_urls = {}
 
-            # Save and Extract Text
+            # Save, Upload, Extract Text
             for file in files:
 
                 print("Processing:", file.filename)
@@ -62,9 +74,21 @@ def index():
                     filename
                 )
 
-                print("Saving to:", filepath)
+                print("Saving temp file:", filepath)
 
                 file.save(filepath)
+
+                # Upload to Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    filepath,
+                    resource_type="raw"
+                )
+
+                file_url = upload_result["secure_url"]
+
+                uploaded_urls[filename] = file_url
+
+                print("Uploaded to Cloudinary:", file_url)
 
                 try:
                     text = extract_resume_text(filepath)
@@ -91,10 +115,7 @@ def index():
             for result in results:
                 log_usage(
                     result["resume"],
-                    os.path.join(
-                        app.config["UPLOAD_FOLDER"],
-                        result["resume"]
-                    ),
+                    uploaded_urls[result["resume"]],
                     job_description,
                     result["score"]
                 )
@@ -178,10 +199,7 @@ def download_user_resume(filename):
     conn.close()
 
     if file:
-        return send_file(
-            file[0],
-            as_attachment=True
-        )
+        return redirect(file[0])
 
     return "File not found"
 

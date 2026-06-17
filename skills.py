@@ -1,6 +1,5 @@
 import spacy
-
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.blank("en")
 
 COMMON_SKILLS = [
     "python",
